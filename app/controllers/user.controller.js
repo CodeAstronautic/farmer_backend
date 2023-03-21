@@ -1,9 +1,4 @@
 const User = require('../models/user.model.js');
-const {RecieptNumber} = require('../models/recieptNumber.model.js');
-const {Trollyarrival} = require('../models/trollyarrival.model.js');
-const {Paymentvoucher} = require('../models/paymentvoucher.model.js');
-const {Paymentlog} = require('../models/paymentlog.model.js');
-const {Farmers} = require('../models/farmer.model.js');
 var md5 = require('md5');
 var jwt = require('jsonwebtoken');
 var bcrypt = require('bcryptjs');
@@ -11,7 +6,7 @@ var config = require('../../config/keys.config.js');
 var ObjectId = require('mongodb').ObjectID;
 
 // Create and Save a new Note
-exports.create = (req, res) => {
+exports.createuser = (req, res) => {
     // Validate request
     if(!req.body.phone || !req.body.password) {
         return res.status(400).send({
@@ -41,7 +36,7 @@ exports.create = (req, res) => {
 
 
 
-exports.login = (req, res) => {
+exports.loginuser = (req, res) => {
   if(!req.body.phone || !req.body.password) {
       return res.status(400).send({
           message: "Phone number or password can not be empty"

@@ -25,7 +25,7 @@ const UserSchema = mongoose.Schema({
     },
     userdetail:{
         gstNumber:{type:String},
-        firmName:{type:String},
+        farmName:{type:String},
     },
     bankingdetail:{
        name:String,

@@ -1,4 +1,5 @@
 const User = require('../models/user.model.js');
+const Admin = require("../models/admin.model");
 const UserType = require('../models/usertype.model.js');
 const CityState = require('../models/citystate.model.js');
 const Crop = require('../models/crop.model.js');
@@ -15,29 +16,25 @@ var ObjectId = require('mongodb').ObjectID;
 
 
 exports.createAdmin = async (req, res) => {
-    // return res.status(400).send({
-    //     message: "Nothing found"
-    // });
-    // Validate request
     if(!req.body.phone || !req.body.password) {
         return res.status(400).send({
             message: "Phone number or password can not be empty"
         });
     }
 
-    let findres = await User.findOne({ phone: req.body.phone});
+    let findres = await Admin.findOne({ phone: req.body.phone});
     console.log('sds',findres);
     if(findres && findres._id){
       return res.status(400).send({
-              message: "user already exit"
+              message: "Admin already exit"
           });
     }
 
-    // Create a User
-    const note = new User({
+    // Create a Admin
+    const note = new Admin({
         name: req.body.name || "", 
         phone: req.body.phone,
-        userType: "admin",
+        email:req.body.email,
         password: md5(req.body.password),
     });
 
@@ -54,31 +51,76 @@ exports.createAdmin = async (req, res) => {
 
 
 
+exports.adminotpsend = async (req, res) => {
+    const { phone } = req.body;
+
+    if (!phone) {
+        res.status(400).json({ error: "Please Enter Your phone" })
+    }
+
+    try {
+        const presuer = await Admin.findOne({ phone: phone });
+
+        if (presuer) {
+            const OTP = Math.floor(1000 + Math.random() * 9000);
+
+            const existEmail = await Admin.findOne({ phone: phone });
+
+            if (existEmail) {
+                const updateData = await Admin.findByIdAndUpdate({ _id: existEmail._id }, {
+                    otp: OTP
+                }, { new: true }
+                );
+
+                await updateData.save();
+                //console And Res OTP
+                console.log("updateData",OTP)
+                res.send({"otp":OTP})
+
+            } else {
+
+                const saveOtpData = new userotp({
+                    phone, otp: OTP
+                });
+
+                await saveOtpData.save();
+                console.log("saveOtpData",saveOtpData.OTP)
+
+            }
+        } 
+        else {
+            res.status(400).json({ error: "This User Not Exist In our Db" })
+        }
+    } catch (error) {
+        res.status(400).json({ error: "Invalid Details", error })
+    }
+};
+
 
 exports.adminlogin = (req, res) => {
   if(!req.body.phone || !req.body.password) {
       return res.status(400).send({
           message: "Phone number or password can not be empty"
       });
-  }
-  User.findOne({ phone: req.body.phone,userType:"admin" }, function (err, user) {
+            }
+  Admin.findOne({ phone: req.body.phone,userType:"admin" }, function (err, admin) {
      if (err) return res.status(500).send({message:'Error on the server.'});
-     if (!user) return res.status(404).send({message:'No user found.'});
+     if (!admin) return res.status(404).send({message:'No admin found.'});
      
-     //console.log('req.body.password, user.password',req.body.password, user.password);
-     //var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
+     //console.log('req.body.password, admin.password',req.body.password, admin.password);
+     //var passwordIsValid = bcrypt.compareSync(req.body.password, admin.password);
      var passwordIsValid = false;
-     if(md5(req.body.password)==user.password){
+     if(md5(req.body.password)==admin.password){
         passwordIsValid = true;
-     }
+        }
 
      if (!passwordIsValid) return res.status(401).send({ auth: false, token: null });
      
-     var token = jwt.sign({ id: user._id,phone:user.phone,name:user.name,userType:user.userType,center:user.center }, config.secret, {
+     var token = jwt.sign({ id: admin._id,phone:admin.phone,name:admin.name,userType:admin.userType,center:admin.center }, config.secret, {
        expiresIn: 86400 // expires in 24 hours
      });
      
-     res.status(200).send({ auth: true, token: token,name:user.name,userType:user.userType,center:user.center });
+     res.status(200).send({ auth: true, token: token,name:admin.name,userType:admin.userType,center:admin.center });
    });
 };
 

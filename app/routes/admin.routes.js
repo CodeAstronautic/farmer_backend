@@ -26,6 +26,7 @@ module.exports = (app) => {
     //admin
     app.post('/api/admin/create', admin.createAdmin);
     app.post('/api/admin/login', admin.adminlogin);
+    app.post('/api/admin/sendotp',admin.adminotpsend)
     //crop
     app.post('/api/admin/addCrop',authmiddleware.authenticateAdmin,validaterequestmiddleware(adminrequestschemas.addCrop), authmiddleware.authenticateAdmin,admin.addCrop);
     app.post('/api/admin/addCropcategory',authmiddleware.authenticateAdmin,validaterequestmiddleware(adminrequestschemas.addCropcategory),admin.addCropcategory);
@@ -78,6 +79,7 @@ module.exports = (app) => {
     app.get('/api/admin/getfiltercommodity',authmiddleware.authenticateAdmin,filterQuery.getFilterCommodity);
     //bank
     app.post('/api/admin/loginbankaccount',authmiddleware.authenticateAdmin,bank.loginbankaccount);
+    app.get('/api/admin/getbankaccount/:id',authmiddleware.authenticateAdmin,bank.getbankaccount)
     app.delete('/api/admin/deletebankaccount/:id',authmiddleware.authenticateAdmin,bank.deletebankaccount);
   
     

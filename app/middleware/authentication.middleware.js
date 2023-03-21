@@ -18,7 +18,7 @@ exports.authenticateAdmin = (req,res,next) =>{
   if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
   jwt.verify(token, config.secret, function(err, decoded) {
      if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
-     //console.log('decoded',decoded);
+     console.log('decoded',decoded);
      if(decoded.userType!='admin')
      	return res.status(401).send({ auth: false, message: 'Unauthorized Access' });
      

@@ -31,6 +31,7 @@ app.get('/api', (req, res) => {
 });
 
 require('./app/routes/admin.routes.js')(app);
+require('./app/routes/user.routes')(app);
 
 // Connecting to the database
 mongoose.connect(dbConfig.url, {

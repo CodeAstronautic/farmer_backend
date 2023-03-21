@@ -22,6 +22,12 @@ exports.loginbankaccount=async(req,res)=>{
     })
 }
 
+exports.getbankaccount = async(req,res)=>{
+    const result=await bank.findById(req.params.id);
+    if(!result) return res.status(500).send({Message:"Can't Find Bank Data With Given Id"});
+    res.status(200).send({Message:"Bank Detail Find Successfully Done..",data:result})
+}
+
 exports.deletebankaccount=async(req,res)=>{
     const result=await bank.findByIdAndDelete(req.params.id);
     if(!result) return res.status(500).send({Message:"Can't Find Bank Data With Given Id"});
