@@ -81,6 +81,7 @@ module.exports = (app) => {
     app.post('/api/admin/loginbankaccount',authmiddleware.authenticateAdmin,bank.loginbankaccount);
     app.get('/api/admin/getbankaccount/:id',authmiddleware.authenticateAdmin,bank.getbankaccount)
     app.delete('/api/admin/deletebankaccount/:id',authmiddleware.authenticateAdmin,bank.deletebankaccount);
-  
+    //location
+    app.post('/api/admin/getlocation',authmiddleware.authenticateAdmin,admin.getlocation);
     
 }

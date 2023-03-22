@@ -12,6 +12,7 @@ var bcrypt = require('bcryptjs');
 var config = require('../../config/keys.config.js');
 const { Router } = require('express');
 const multer=require("multer")
+let nodeGeocoder = require('node-geocoder');
 var ObjectId = require('mongodb').ObjectID;
 
 
@@ -98,70 +99,61 @@ exports.adminotpsend = async (req, res) => {
 
 
 exports.adminlogin = (req, res) => {
-  if(!req.body.phone || !req.body.password) {
+    if(!req.body.phone || !req.body.otp) {
       return res.status(400).send({
-          message: "Phone number or password can not be empty"
+          message: "Phone number or otp can not be empty"
       });
-            }
-  Admin.findOne({ phone: req.body.phone,userType:"admin" }, function (err, admin) {
-     if (err) return res.status(500).send({message:'Error on the server.'});
-     if (!admin) return res.status(404).send({message:'No admin found.'});
-     
-     //console.log('req.body.password, admin.password',req.body.password, admin.password);
-     //var passwordIsValid = bcrypt.compareSync(req.body.password, admin.password);
-     var passwordIsValid = false;
-     if(md5(req.body.password)==admin.password){
-        passwordIsValid = true;
-        }
+    }
+    Admin.findOne({ phone: req.body.phone,userType:"admin" }, function (err, admin) {
+        if (err) return res.status(500).send({message:'Error on the server.'});
+        if (!admin) return res.status(404).send({message:'No admin found.'});
+        if(admin.otp!==req.body.otp) return res.status(500).send({Message:"Otp can't Match"})
+        var token = jwt.sign({ id: admin._id,phone:admin.phone,name:admin.name,userType:admin.userType,otp:admin.otp}, config.secret, {
+          expiresIn: 86400 // expires in 24 hours
+        });
 
-     if (!passwordIsValid) return res.status(401).send({ auth: false, token: null });
-     
-     var token = jwt.sign({ id: admin._id,phone:admin.phone,name:admin.name,userType:admin.userType,center:admin.center }, config.secret, {
-       expiresIn: 86400 // expires in 24 hours
-     });
-     
-     res.status(200).send({ auth: true, token: token,name:admin.name,userType:admin.userType,center:admin.center });
-   });
+        res.status(200).send({ auth: true, token: token,name:admin.name,userType:admin.userType,center:admin.center });
+    });
 };
 
 exports.getUsertypes = (req, res) => {
-  UserType.find({}, function (err, usertypes) {
-     if (err) return res.status(500).send({message:'Error on the server.'});
-     if (!usertypes) return res.status(404).send({message:'No usertype found.'});
+    UserType.find({}, function (err, usertypes) {
+        if (err) return res.status(500).send({message:'Error on the server.'});
+        if (!usertypes) return res.status(404).send({message:'No usertype found.'});
      
-     res.status(200).send({ status: true, result:usertypes });
-   });
+        res.status(200).send({ status: true, result:usertypes });
+    });
 };
 
 exports.getcitystate = (req, res) => {
-  CityState.find({}, function (err, citystatesres) {
-     if (err) return res.status(500).send({message:'Error on the server.'});
-     if (!citystatesres) return res.status(404).send({message:'No city state found.'});
+    CityState.find({}, function (err, citystatesres) {
+        if (err) return res.status(500).send({message:'Error on the server.'});
+        if (!citystatesres) return res.status(404).send({message:'No city state found.'});
      
-     res.status(200).send({ status: true, result:citystatesres });
-   });
+        res.status(200).send({ status: true, result:citystatesres });
+    });
 };
 
 exports.landmeasurementunits = (req, res) => {
-  const measurementunits = ["Square Feet","Acre","Hectare","Gaj","Bigha"];
-  res.status(200).send({ status: true, result:measurementunits });
+    const measurementunits = ["Square Feet","Acre","Hectare","Gaj","Bigha"];
+    res.status(200).send({ status: true, result:measurementunits });
 };
 
 exports.landtypes = (req, res) => {
-  const landtype = ["Irrigated","Nonirrigated"];
-  res.status(200).send({ status: true, result:landtype });
+    const landtype = ["Irrigated","Nonirrigated"];
+    res.status(200).send({ status: true, result:landtype });
 };
 
 exports.croplist = (req, res) => {
-  let findobj = {};
-  if(req.query && req.query.categoryname){
-     findobj.categoryname = req.query.categoryname;
-  }
-  Crop.find(findobj, function (err, crops) {
-     if (err) return res.status(500).send({message:'Error on the server.'});
-     if (!crops) return res.status(404).send({message:'No crop found.'});     
-     res.status(200).send({ status: true, result:crops });
-   });
+    let findobj = {};
+    if(req.query && req.query.categoryname){
+         findobj.categoryname = req.query.categoryname;
+    }
+    Crop.find(findobj, function (err, crops) {
+        if (err) return res.status(500).send({message:'Error on the server.'});
+        if (!crops) return res.status(404).send({message:'No crop found.'});     
+        res.status(200).send({ status: true, result:crops });
+    });
 };
 
 exports.createFarmer = async(req, res) => {
@@ -251,15 +243,15 @@ exports.logoutfarmer=async(req,res)=>{
 exports.createdealer = async(req, res) => {
     let findphone = await User.findOne({ phone: req.body.phone});
     if(findphone && findphone._id){
-      return res.status(400).send({
-              message: "Dealer already exit with this phone number"
-          });
+        return res.status(400).send({
+            message: "Dealer already exit with this phone number"
+        });
     }
     let findemail = await User.findOne({ email: req.body.email});
     if(findemail && findemail._id){
-      return res.status(400).send({
-              message: "Dealer already exit with this email"
-          });
+        return res.status(400).send({
+            message: "Dealer already exit with this email"
+        });
     }
 
     //genereate useridnumber
@@ -303,22 +295,22 @@ exports.getdealers = (req, res) => {
 exports.getdealerprofile = async(req,res)=>{
     id=req.params.id;
     const result= await User.findById(id);
-        if(!result) return res.status(500).send({Message:"Can't Find Dealer Data With Given Id"})
-        res.status(400).send({Message:"Dealer Data Find Successfully Done",result});
+    if(!result) return res.status(500).send({Message:"Can't Find Dealer Data With Given Id"})
+    res.status(400).send({Message:"Dealer Data Find Successfully Done",result});
 }
 
 exports.updatedealerbyid = async(req,res)=>{
     const result=await User.findByIdAndUpdate(req.params.id,{
-            name:req.body.name,
-            phone:req.body.phone, 
-            email:req.body.email, 
-            password:req.body.password,
-            locality:req.body.locality,
-            city:req.body.city,
-            state:req.body.state,
-            taluk:req.body.taluk,
-            country:req.body.country,
-            pin:req.body.pin
+        name:req.body.name,
+        phone:req.body.phone, 
+        email:req.body.email, 
+        password:req.body.password,
+        locality:req.body.locality,
+        city:req.body.city,
+        state:req.body.state,
+        taluk:req.body.taluk,
+        country:req.body.country,
+        pin:req.body.pin
     },{
         new:true
     })
@@ -333,30 +325,30 @@ exports.logoutdealer=async(req,res)=>{
 }
 
 exports.userdetail = (req, res) => {
-  if(req.params && req.params.userid){
-    User.findOne({_id:req.params.userid,userType:{$ne:"admin"}},{password:0,__v:0,updatedAt:0}, function (err, userdata) {
-       if (err) return res.status(500).send({message:'Error on the server.'});
-       if (!userdata) return res.status(404).send({message:'No User found.'});
-       
-       res.status(200).send({ status: true, result:userdata });
-     });
-  }else{
+    if(req.params && req.params.userid){
+        User.findOne({_id:req.params.userid,userType:{$ne:"admin"}},{password:0,__v:0,updatedAt:0}, function (err, userdata) {
+           if (err) return res.status(500).send({message:'Error on the server.'});
+           if (!userdata) return res.status(404).send({message:'No User found.'});
+        
+           res.status(200).send({ status: true, result:userdata });
+        });
+    }else{
      return res.status(422).send({ message: "missing required parameter" });
-  }
+    }
 };
 
 exports.createBuyer = async(req, res) => {
     let findphone = await User.findOne({ phone: req.body.phone});
     if(findphone && findphone._id){
-      return res.status(400).send({
+        return res.status(400).send({
               message: "Buyer already exit with this phone number"
-          });
+        });
     }
     let findemail = await User.findOne({ email: req.body.email});
     if(findemail && findemail._id){
-      return res.status(400).send({
-              message: "Buyer already exit with this email"
-          });
+        return res.status(400).send({
+            message: "Buyer already exit with this email"
+        });
     }
 
     //genereate useridnumber
@@ -400,8 +392,8 @@ exports.getbuyer = (req, res) => {
 exports.getbuyerprofile = async(req,res)=>{
     id=req.params.id;
     const result= await User.findById(id);
-        if(!result) return res.status(500).send({Message:"Can't Find Buyer Data With Given Id"})
-        res.status(400).send({Message:"Buyer Data Find Successfully Done",result});
+    if(!result) return res.status(500).send({Message:"Can't Find Buyer Data With Given Id"})
+    res.status(400).send({Message:"Buyer Data Find Successfully Done",result});
 }
 
 exports.updatebuyerbyid = async(req,res)=>{
@@ -432,15 +424,15 @@ exports.logoutbuyer=async(req,res)=>{
 exports.createretailer = async(req, res) => {
     let findphone = await User.findOne({ phone: req.body.phone});
     if(findphone && findphone._id){
-      return res.status(400).send({
+        return res.status(400).send({
               message: "Retailer already exit with this phone number"
-          });
+        });
     }
     let findemail = await User.findOne({ email: req.body.email});
     if(findemail && findemail._id){
-      return res.status(400).send({
-              message: "Retailer already exit with this email"
-          });
+        return res.status(400).send({
+            message: "Retailer already exit with this email"
+        });
     }
 
     //genereate useridnumber
@@ -484,8 +476,8 @@ exports.getretailer = (req, res) => {
 exports.getretailerprofile = async(req,res)=>{
     id=req.params.id;
     const result= await User.findById(id);
-        if(!result) return res.status(500).send({Message:"Can't Find Retailer Data With Given Id"})
-        res.status(400).send({Message:"Retailer Data Find Successfully Done",result});
+    if(!result) return res.status(500).send({Message:"Can't Find Retailer Data With Given Id"})
+    res.status(400).send({Message:"Retailer Data Find Successfully Done",result});
 }
 
 exports.updateretailerbyid = async(req,res)=>{
@@ -516,9 +508,9 @@ exports.logoutretailer=async(req,res)=>{
 exports.addCropcategory = async (req, res) => {
     let findres = await CropType.findOne({ name: req.body.name});
     if(findres && findres._id){
-      return res.status(400).send({
-              message: "Crop Category already exit"
-          });
+        return res.status(400).send({
+            message: "Crop Category already exit"
+        });
     }
 
     // Create a category
@@ -543,8 +535,8 @@ exports.addCropSubcategory = async (req, res) => {
         let findcropsubcat = await CropType.findOne({ name: req.body.categoryname,"subcategory.name":req.body.subcategoryname});
         if(findcropsubcat && findcropsubcat._id){
             return res.status(400).send({
-                  message: "Crop SubCategory already exits in this category"
-              });
+                message: "Crop SubCategory already exits in this category"
+            });
         }
         
         let updtoj = {"name":req.body.subcategoryname};
@@ -573,8 +565,8 @@ exports.addCropSubcategory = async (req, res) => {
         let findcropsubcat = await CropType.findOne({ name: req.body.categoryname,"subcategory.name":req.body.subcategoryname,"subcategory.subcategorytype.name":req.body.subcategorytype});
         if(findcropsubcat && findcropsubcat._id){
             return res.status(400).send({
-                  message: "Crop SubCategory type already exits in this category"
-              });
+                message: "Crop SubCategory type already exits in this category"
+            });
         }
 
         //let addsubcat = await CropType.findOneAndUpdate({ name: req.body.categoryname},{$push:{"subcategory":{"name":req.body.subcategoryname}}});
@@ -604,8 +596,8 @@ exports.addCrop = async (req, res) => {
             let findcropsubcat = await CropType.findOne({ name: req.body.categoryname,"subcategory.name":req.body.subcategoryname});
             if(!findcropsubcat){
                 return res.status(400).send({
-                      message: "Crop SubCategory not found"
-                  });
+                    message: "Crop SubCategory not found"
+                });
             }
             saveobj.subcategoryname = req.body.subcategoryname;
         }
@@ -615,9 +607,9 @@ exports.addCrop = async (req, res) => {
 
         let findcrop = await Crop.findOne({ name: req.body.cropname,categoryname:req.body.categoryname});
         if(findcrop && findcrop._id){
-             return res.status(400).send({
-                      message: "Crop already exits"
-                  });
+            return res.status(400).send({
+                message: "Crop already exits"
+            });
         }
         console.log("saveobj",saveobj);
         const cropobj = new Crop(saveobj);
@@ -633,8 +625,8 @@ exports.addCrop = async (req, res) => {
       
     }else{
         return res.status(400).send({
-              message: "Crop Category not found"
-          });
+            message: "Crop Category not found"
+        });
     }
 };
 
@@ -713,3 +705,18 @@ let generateUseridnumber = async(usertype,state,city)=>{
   return finalstr+usernumber;
 }
 
+exports.getlocation = async(req,res)=>{
+    let provider = 'openstreetmap'
+    let geoCoder = nodeGeocoder(provider);
+    const address = req.body.address;
+    await geoCoder.geocode(address,(err,result)=>{
+        // console.log(result);
+        if(err) throw err;
+        else{
+            result.map((data)=>{
+                console.log(data);
+                res.send(data);
+            })
+        }
+    })     
+}                                                       
