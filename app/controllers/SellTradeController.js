@@ -11,7 +11,7 @@ exports.sellTrade = async(req,res)=>{
         quantity:req.body.quantity,
         image:req.file.path
     }
-    console.log("data",data)
+    // console.log("data",data)
     await SellModel.create(data,(err,result)=>{
         if(err) throw err;
         else{

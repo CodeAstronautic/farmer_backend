@@ -2,7 +2,7 @@ const Crops = require('../models/crop.model');
 
 
 exports.getFilterQueryData = async (req,res)=>{
-    const subcategoryname=req.query.name
+    const subcategoryname=req.body.name
     if(subcategoryname=="Fruits" || subcategoryname=="Vegetables" || subcategoryname=="Crops"){
     let findresult = await Crops.find({subcategoryname:subcategoryname});
     if (!findresult) return res.status(404).send({message:'No category found.'});
@@ -15,7 +15,7 @@ exports.getFilterQueryData = async (req,res)=>{
 }
  
 exports.getFilterCommodity=async(req,res)=>{
-    const name=req.query.name;
+    const name=req.body.name;
         let result = await Crops.find({name:name});
         if (!result) return res.status(404).send({ status:false, message:'No name found.'});
         else{
